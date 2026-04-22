@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Request
 from fastapi.responses import JSONResponse, RedirectResponse
-from pydantic import BaseModel, EmailStr
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field, model_validator
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
@@ -78,9 +78,26 @@ except Exception as e:
     print(f"❌ Could not get bcrypt version: {e}")
 
 class UserRegister(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
     email: EmailStr
     password: str
-    full_name: str
+    full_name: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("full_name", "fullName", "username", "name"),
+    )
+
+    @model_validator(mode="after")
+    def set_full_name(self):
+        """Accept legacy signup payloads that omit or rename the full-name field."""
+        if self.full_name:
+            self.full_name = self.full_name.strip()
+            return self
+
+        email_local_part = self.email.split("@", 1)[0]
+        fallback_name = email_local_part.replace(".", " ").replace("_", " ").replace("-", " ").strip()
+        self.full_name = fallback_name or self.email
+        return self
 
 class UserLogin(BaseModel):
     email: EmailStr

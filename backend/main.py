@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -191,7 +192,7 @@ app = FastAPI(lifespan=lifespan)
 
 # --- MIDDLEWARE STACK ---
 
-# 1. Custom 400 Handler to see why preflights fail
+# 1. Exception handlers
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -210,11 +211,28 @@ async def custom_500_handler(request: Request, exc: Exception):
         }
     )
 
-@app.exception_handler(400)
-async def custom_400_handler(request: Request, exc: Exception):
-    print(f"🔥 DEBUG: 400 Bad Request on {request.method} {request.url}")
-    print(f"🔥 DEBUG: Headers: {dict(request.headers)}")
-    return JSONResponse(status_code=400, content={"detail": "Bad Request Debug", "headers": dict(request.headers)})
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logger.warning(f"HTTP {exc.status_code} on {request.method} {request.url.path}: {exc.detail}")
+
+    if isinstance(exc.detail, dict):
+        content = exc.detail
+    else:
+        content = {"detail": exc.detail}
+
+    return JSONResponse(status_code=exc.status_code, content=content)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(f"Validation error on {request.method} {request.url.path}: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Invalid request payload",
+            "errors": jsonable_encoder(exc.errors()),
+        },
+    )
 
 # 3. CORS Middleware
 allowed_origins = [

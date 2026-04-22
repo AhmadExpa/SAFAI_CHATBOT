@@ -2,7 +2,7 @@ try:
     from fastapi import FastAPI, HTTPException
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
-    from pydantic import BaseModel
+    from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
     import os
     import json
 except ImportError as e:
@@ -21,6 +21,13 @@ except ImportError as e:
     class CORSMiddleware: pass
     class JSONResponse: pass
     class BaseModel: pass
+    class ConfigDict(dict): pass
+    def Field(*args, **kwargs): return None
+    class AliasChoices:
+        def __init__(self, *args, **kwargs): pass
+    def model_validator(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
 
 # Create a simple FastAPI app for testing
 app = FastAPI(title="PhatagiAI Backend", version="1.0.0")
@@ -54,9 +61,25 @@ class LoginRequest(BaseModel):
     password: str
 
 class RegisterRequest(BaseModel):
-    username: str
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
+    username: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("username", "full_name", "fullName", "name"),
+    )
     email: str
     password: str
+
+    @model_validator(mode="after")
+    def set_username(self):
+        if self.username:
+            self.username = self.username.strip()
+            return self
+
+        email_local_part = self.email.split("@", 1)[0]
+        fallback_name = email_local_part.replace(".", " ").replace("_", " ").replace("-", " ").strip()
+        self.username = fallback_name or self.email
+        return self
 
 @app.get("/")
 async def root():
