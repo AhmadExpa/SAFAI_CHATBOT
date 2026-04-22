@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -18,6 +18,7 @@ from email.mime.text import MIMEText
 from authlib.integrations.starlette_client import OAuth
 import logging
 import hashlib
+from urllib.parse import urlparse
 
 router = APIRouter()
 
@@ -397,9 +398,61 @@ oauth.register(
     }
 )
 
+
+def _origin_from_url(url: str | None) -> str | None:
+    if not url:
+        return None
+
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return None
+
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _request_origin(request: Request) -> str:
+    forwarded_proto = (request.headers.get("x-forwarded-proto") or request.url.scheme).split(",")[0].strip()
+    forwarded_host = request.headers.get("x-forwarded-host")
+    host = (forwarded_host or request.headers.get("host") or request.url.netloc).split(",")[0].strip()
+    return f"{forwarded_proto}://{host}"
+
+
+def _google_redirect_uri(request: Request) -> str:
+    configured_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    if configured_redirect_uri:
+        return configured_redirect_uri.rstrip("/")
+
+    return f"{_request_origin(request)}/auth/google/callback"
+
+
+def _frontend_origin(request: Request) -> str:
+    configured_frontend_url = os.getenv("FRONTEND_URL")
+    if configured_frontend_url:
+        return configured_frontend_url.rstrip("/")
+
+    session_frontend_url = request.session.get("oauth_frontend_url")
+    if session_frontend_url:
+        return session_frontend_url.rstrip("/")
+
+    inferred_frontend_url = (
+        _origin_from_url(request.headers.get("origin"))
+        or _origin_from_url(request.headers.get("referer"))
+    )
+    if inferred_frontend_url:
+        return inferred_frontend_url.rstrip("/")
+
+    return "http://localhost:3000"
+
 @router.get("/google/login")
 async def google_login(request: Request):
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+    inferred_frontend_url = (
+        _origin_from_url(request.headers.get("origin"))
+        or _origin_from_url(request.headers.get("referer"))
+    )
+    if inferred_frontend_url:
+        request.session["oauth_frontend_url"] = inferred_frontend_url
+
+    redirect_uri = _google_redirect_uri(request)
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
@@ -427,11 +480,9 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
         access_token = create_access_token(data={"sub": db_user.email}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
         
         # Return a redirect to frontend with token
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-        return JSONResponse(
-            status_code=302,
-            headers={"Location": f"{frontend_url}/chat?token={access_token}"}
-        )
+        frontend_url = _frontend_origin(request)
+        request.session.pop("oauth_frontend_url", None)
+        return RedirectResponse(url=f"{frontend_url}/chat?token={access_token}", status_code=302)
     except Exception as e:
         logging.error(f"Google OAuth callback error: {e}")
         raise HTTPException(status_code=400, detail="Google authentication failed")
