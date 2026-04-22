@@ -1,0 +1,210 @@
+/* Import fonts FIRST */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Then Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.75rem;
+  --background: 210 100% 97%;
+  /* #EDF5FF */
+  --foreground: 210 20% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 20% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 20% 20%;
+  --primary: 187 96% 56%;
+  /* #38DCF8 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 195 30% 92%;
+  --secondary-foreground: 210 20% 20%;
+  --muted: 195 20% 90%;
+  --muted-foreground: 210 10% 50%;
+  --accent: 187 96% 56%;
+  /* #38DCF8 */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 195 30% 85%;
+  --input: 195 30% 90%;
+  --ring: 187 96% 56%;
+  /* #38DCF8 */
+
+  /* Custom SaiFai tokens */
+  --sidebar-bg: 0 0% 98%;
+  --sidebar-border: 195 30% 88%;
+  --sidebar-hover: 195 40% 94%;
+  --sidebar-active: 187 96% 95%;
+  --chat-input-bg: 0 0% 100%;
+  --chat-input-border: 195 30% 85%;
+  --model-card-bg: 195 60% 96%;
+  --model-card-border: 195 50% 85%;
+  --gradient-start: 210 100% 97%;
+  /* #EDF5FF */
+  --gradient-end: 187 96% 56%;
+  /* #38DCF8 */
+  --shadow-soft: 0 4px 20px -4px hsl(195 50% 70% / 0.3);
+  --shadow-card: 0 2px 12px -2px hsl(195 50% 60% / 0.15);
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Authentication page tokens */
+  --auth-gradient-start: 210 100% 97%;
+  /* #EDF5FF */
+  --auth-gradient-end: 187 96% 56%;
+  /* #38DCF8 */
+  --auth-image-border: 200 40% 85%;
+  --auth-watermark-opacity: 0.08;
+
+  /* Chat theme tokens - light mode */
+  --chat-bg: 210 100% 97%;
+  /* #EDF5FF */
+  --chat-bubble-user: 187 96% 56%;
+  /* #38DCF8 */
+  --chat-bubble-user-fg: 0 0% 100%;
+  --chat-bubble-assistant: 0 0% 100%;
+  --chat-bubble-assistant-fg: 210 20% 20%;
+  --main-bg: 210 100% 97%;
+  /* #EDF5FF */
+}
+
+.dark {
+  --background: 0 0% 20%;
+  --foreground: 195 20% 95%;
+  --card: 0 0% 25%;
+  --card-foreground: 195 20% 95%;
+  --popover: 0 0% 25%;
+  --popover-foreground: 195 20% 95%;
+  --primary: 195 100% 50%;
+  --primary-foreground: 210 30% 10%;
+  --secondary: 0 0% 30%;
+  --secondary-foreground: 195 20% 95%;
+  --muted: 0 0% 35%;
+  --muted-foreground: 195 15% 60%;
+  --accent: 195 100% 50%;
+  --accent-foreground: 210 30% 10%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 35%;
+  --input: 0 0% 35%;
+  --ring: 195 100% 50%;
+  --sidebar-bg: 0 0% 18%;
+  --sidebar-border: 0 0% 30%;
+  --sidebar-hover: 0 0% 25%;
+  --sidebar-active: 195 100% 20%;
+  --chat-bg: 0 0% 20%;
+  --chat-bubble-user: 195 100% 50%;
+  --chat-bubble-user-fg: 210 30% 10%;
+  --chat-bubble-assistant: 0 0% 25%;
+  --chat-bubble-assistant-fg: 195 20% 95%;
+  --main-bg: 0 0% 20%;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-family: var(--font-body);
+  }
+}
+
+@layer utilities {
+  .main-bg {
+    background: linear-gradient(180deg, #EDF5FF 0%, #C7F6FF 100%);
+  }
+
+  .dark .main-bg {
+    background: #2D2D2D;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(180deg, #EDF5FF 0%, #C7F6FF 100%);
+  }
+
+  .dark .gradient-bg {
+    background: #2D2D2D;
+  }
+
+  .chat-bubble-user-themed {
+    background-color: hsl(var(--chat-bubble-user));
+    color: hsl(var(--chat-bubble-user-fg));
+  }
+
+  .chat-bubble-assistant-themed {
+    background-color: hsl(var(--chat-bubble-assistant));
+    color: hsl(var(--chat-bubble-assistant-fg));
+  }
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Custom Scrollbar Styles */
+/* Light Mode Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 6px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Dark Mode Scrollbar */
+.dark ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(0 0% 20%);
+  border-radius: 6px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 40%);
+  border-radius: 6px;
+  border: 2px solid hsl(0 0% 20%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(0 0% 50%);
+}
+
+.dark ::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--background));
+}
+
+.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(0 0% 40%) hsl(0 0% 20%);
+}
