@@ -1,5 +1,5 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use a Python version compatible with current dependencies and type syntax
+FROM python:3.11-slim
 
 # Set environment variables
 # Prevent Python from writing .pyc files
